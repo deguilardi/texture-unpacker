@@ -22,13 +22,16 @@ foreach($files as $file){
   $fullImage = imagecreatefrompng($workDir.'/'.$fileName.'.png');
   $fullImageRotated = imagecreatefrompng($workDir.'/'.$fileName.'.png');
   $fullImageRotated = imagerotate($fullImage, 90, 0);
+  $normalImage = imagecreatefrompng($workDir.'/'.$fileName.'_n.png');
+  $normalImageRotated = imagecreatefrompng($workDir.'/'.$fileName.'_n.png');
+  $normalImageRotated = imagerotate($normalImage, 90, 0);
   $sizeOrigin = getimagesize($workDir.'/'.$fileName.'.png');
   foreach($frames as $imageName => $frameProperties){
     $textureRotated = $frameProperties['textureRotated'];
     
     $spriteOffsetStr = $frameProperties['spriteOffset'];
     $spriteOffset = array();
-    preg_match('/\{([\-]{0,}\d+),([\-]{0,}\d+)\}/', $spriteOffsetStr, $spriteOffset);
+    preg_match('/\{([\-\.0-9]{0,}),([\-\.0-9]{0,})\}/', $spriteOffsetStr, $spriteOffset);
     
     $spriteSourceSizeStr = $frameProperties['spriteSourceSize'];
     $spriteSourceSize = array();
@@ -49,15 +52,18 @@ foreach($files as $file){
     $yDestination = $spriteSourceSize[2] - ($spriteSourceSize[2]/2 + $spriteOffset[2]) - $hOrigin/2;
       
     $newImage = imagecreatetruecolor($spriteSourceSize[1], $spriteSourceSize[2]);
+    $newNormal = imagecreatetruecolor($spriteSourceSize[1], $spriteSourceSize[2]);
     
     if($textureRotated){
       $imageReference = $fullImageRotated;
+      $normalReference = $normalImageRotated;
       $temp = $xOrigin;
       $xOrigin = $yOrigin;
       $yOrigin = $sizeOrigin[0] - $temp - $hOrigin;
     }
     else{
       $imageReference = $fullImage;
+      $normalReference = $normalImage;
     }
     
     $transparent = imagecolorallocatealpha($newImage, 0, 0, 0, 127);
@@ -68,6 +74,13 @@ foreach($files as $file){
     imagepng($newImage, $outputDir.'/'.$fileName.'/'.$imageName);
     imagedestroy($newImage);
     @chmod($outputDir.'/'.$fileName.'/'.$imageName, 0777);
+
+    $purple = imagecolorallocate($newNormal, 127, 127, 255);
+    imagefill($newNormal, 0, 0, $purple);
+    imagecopyresampled($newNormal, $normalReference, $xDestination, $yDestination, $xOrigin, $yOrigin, $wDestination, $hDestination, $wOrigin, $hOrigin);
+    imagepng($newNormal, $outputDir.'/'.$fileName.'/'. str_replace(".png","_n.png",$imageName) );
+    imagedestroy($newNormal);
+
   }
   imagedestroy($fullImage);
   imagedestroy($fullImageRotated);
